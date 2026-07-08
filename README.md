@@ -228,4 +228,4 @@ Tests/
 
 ## License
 
-License to be decided.
+BSD 2
