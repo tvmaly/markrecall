@@ -1,10 +1,10 @@
 # Plan
 
-App name (working title): **StudyDeck**
+App name (working title): **MarkRecall**
 
 ## 1. Purpose
 
-StudyDeck is an iOS app for students ages 8–18 to study math, science, history, music, and other subjects using open, community-authorable Markdown question files with embedded LaTeX. It applies spaced repetition (Leitner box system) and per-profile mastery tracking to make practice efficient, and gamifies consistency by showing days practiced in the current month. It solves the problem of study content being locked inside proprietary flashcard formats: any teacher or parent can author a plain Markdown file, host it on GitHub, and students can load, cache, and practice it offline.
+MarkRecall is an iOS app for students ages 8–18 to study math, science, history, music, and other subjects using open, community-authorable Markdown question files with embedded LaTeX. It applies spaced repetition (Leitner box system) and per-profile mastery tracking to make practice efficient, and gamifies consistency by showing days practiced in the current month. It solves the problem of study content being locked inside proprietary flashcard formats: any teacher or parent can author a plain Markdown file, host it on GitHub, and students can load, cache, and practice it offline.
 
 ## 2. Scope
 
@@ -147,7 +147,7 @@ Validation: DeckValidator → [ValidationIssue] (code, message, line)
 ### 7.1 AppShell (entry/navigation)
 - **Purpose**: app entry, root navigation, active-profile state.
 - **Responsibilities**: build `AppDependencies`; own `NavigationStack` path; gate on profile selection.
-- **Public interface**: `StudyDeckApp: App`, `AppRouter` (`@Observable`, `var path: [Route]`).
+- **Public interface**: `MarkRecallApp: App`, `AppRouter` (`@Observable`, `var path: [Route]`).
 - **Inputs**: none. **Outputs**: routed screens. **Dependencies**: all stores (via env).
 - **Failure modes**: corrupted profiles file → recovery flow (rename corrupt file, start fresh, log `E-PERSIST-01`).
 - **Test strategy**: router unit tests (route enum transitions); launch UI test.
@@ -406,7 +406,7 @@ Front matter: all eight keys present, `version` int ≥ 1, `topics` non-empty, `
 - **Networking**: single operation — `GET url` via `URLSession` behind `protocol DeckFetching { func fetch(_ url: URL) async throws -> String }`. Accepts `text/markdown`, `text/plain`, `application/octet-stream` (raw.githubusercontent serves text/plain); rejects others (`.invalidContentType`). Timeout 15 s. No auth.
 - **Error handling**: `URLError` mapped to `.network`; body decode as UTF-8 with BOM strip.
 - **Caching / offline**: the cache IS the source of truth (REQ-005/030); a deck is fetched once at import and never auto-refetched. Manual re-import = update (REQ-020).
-- **Persistence layout** (Application Support/StudyDeck/):
+- **Persistence layout** (Application Support/MarkRecall/):
   - `profiles.json` — `[Profile]`
   - `decks/<deckID>/source.md` + `manifest.json` (DeckMeta + question index with per-question content hashes, REQ-020)
   - `state/<profileID>/events.jsonl` — append-only, one `LogEvent` (practice or subscription) per line — **sole source of truth**
@@ -417,8 +417,8 @@ Front matter: all eight keys present, `version` int ≥ 1, `topics` non-empty, `
 
 ## 12. AI-Agent Interaction Model
 
-- **Inputs the agent can provide**: deck Markdown text (via fixture files or a `studydeck://import?path=` launch argument in DEBUG); launch arguments `-uiTestMode 1 -fixtureDeck <name> -frozenDate <ISO8601>` to seed deterministic state; simulated answers via XCUITest.
-- **Outputs the agent can inspect**: (1) `ImportResult` JSON — in DEBUG, every import writes `last-import-result.json` (deck summary or `[ValidationIssue]`) to Documents for retrieval; (2) `events.jsonl` and `scheduler.json` — plain text, stable schema; (3) structured `os_log` output filtered by subsystem `com.studydeck.app`.
+- **Inputs the agent can provide**: deck Markdown text (via fixture files or a `MarkRecall://import?path=` launch argument in DEBUG); launch arguments `-uiTestMode 1 -fixtureDeck <name> -frozenDate <ISO8601>` to seed deterministic state; simulated answers via XCUITest.
+- **Outputs the agent can inspect**: (1) `ImportResult` JSON — in DEBUG, every import writes `last-import-result.json` (deck summary or `[ValidationIssue]`) to Documents for retrieval; (2) `events.jsonl` and `scheduler.json` — plain text, stable schema; (3) structured `os_log` output filtered by subsystem `com.MarkRecall.app`.
 - **Validation signals**: exit contract of `DeckParsing` — success (Deck JSON) or failure (issue codes + lines). Codes are stable API (§7.2).
 - **Retry/adjustment loop**: agent imports file → reads `last-import-result.json` → if `E-Q-02` at line 14, fixes the `(x)` marker at that line → re-imports. Same loop applies to URL import (retry preserves URL, REQ-031).
 - **Error feedback format**: `{"status":"failed","issues":[{"code":"E-Q-02","message":"...","line":14}]}` — fixed schema, versioned by `formatVersion` field.
@@ -441,7 +441,7 @@ Front matter: all eight keys present, `version` int ≥ 1, `topics` non-empty, `
 
 ## 14. Observability and Traceability
 
-- **Logs**: `os.Logger`, subsystem `com.studydeck.app`, categories per §7.10; every line includes correlation ID.
+- **Logs**: `os.Logger`, subsystem `com.MarkRecall.app`, categories per §7.10; every line includes correlation ID.
 - **Metrics (local only)**: import duration, parse duration, session length — logged, not uploaded (REQ-060).
 - **Analytics events**: none (out of scope by privacy stance).
 - **Audit**: the event log itself is the audit trail for all practice claims (REQ-021/022).
@@ -524,8 +524,8 @@ No remote config, no feature-flag service (out of scope).
 
 - **Folder structure**
   ```
-  StudyDeck/
-    App/            (StudyDeckApp, AppRouter, AppDependencies, AXIdentifiers)
+  MarkRecall/
+    App/            (MarkRecallApp, AppRouter, AppDependencies, AXIdentifiers)
     DeckFormat/     (pure: models, parser, validator, grader, LeitnerRules)  ← SPM local package
     Services/       (stores, import, scheduler, session, stats, logging)
     UI/             (per-screen folders: View + VM; Shared/ for RichTextView, MathView, ErrorBanner)
